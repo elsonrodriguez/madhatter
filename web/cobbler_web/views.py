@@ -6,20 +6,19 @@ from django.http import HttpResponseRedirect
 from mod_python import apache
 
 import xmlrpclib
-import time
 import simplejson
 import string
 import distutils
 import exceptions
 import time
 
-import cobbler.item_distro  as item_distro
-import cobbler.item_profile as item_profile
-import cobbler.item_system  as item_system
-import cobbler.item_repo    as item_repo
-import cobbler.item_image   as item_image
-import cobbler.field_info   as field_info
-import cobbler.utils        as utils
+import cobbler.item_distro    as item_distro
+import cobbler.item_profile   as item_profile
+import cobbler.item_system    as item_system
+import cobbler.item_repo      as item_repo
+import cobbler.item_image     as item_image
+import cobbler.item_mgmtclass as item_mgmtclass
+import cobbler.field_info     as field_info
 
 url_cobbler_api = None
 remote = None
@@ -144,6 +143,8 @@ def get_fields(what, is_subobject, seed_item=None):
        field_data = item_repo.FIELDS
     if what == "image":
        field_data =  item_image.FIELDS
+    if what == "mgmtclass":
+       field_data =  item_mgmtclass.FIELDS
 
     settings = remote.get_settings()
   
@@ -289,7 +290,7 @@ def __format_items(items, column_names):
         for fieldname in column_names:
             if fieldname == "name":
                 html_element = "name"
-            elif fieldname in [ "system", "repo", "distro", "profile", "image" ]:
+            elif fieldname in [ "system", "repo", "distro", "profile", "image", "mgmtclass" ]:
                 html_element = "editlink"
             elif fieldname in field_info.USES_CHECKBOX:
                 html_element = "checkbox"
@@ -330,6 +331,8 @@ def genlist(request, what, page=None):
        columns = [ "name", "file" ]
     if what == "network":
        columns = [ "name" ] 
+    if what == "mgmtclass":
+       columns = [ "name" ]
 
     # render the list
     t = get_template('generic_list.tmpl')
@@ -1065,5 +1068,4 @@ def generic_save(request,what):
         return error_page(request, str(e))
 
     return HttpResponseRedirect('/cobbler_web/%s/list' % what)
-
 

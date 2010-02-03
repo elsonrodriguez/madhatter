@@ -32,6 +32,7 @@ import item_system
 import item_profile
 import item_distro
 import item_repo
+import item_mgmtclass
 import item_image
 from utils import _
 
@@ -285,6 +286,8 @@ class Collection:
                     self.lite_sync.add_single_distro(ref.name)
                 elif isinstance(ref, item_image.Image):
                     self.lite_sync.add_single_image(ref.name)
+                elif isinstance(ref, item_mgmtclass.Mgmtclass):
+                    pass
                 elif isinstance(ref, item_repo.Repo):
                     pass
                 else:

@@ -450,6 +450,58 @@ Ordinarily cobbler's repo system will understand what you mean without supplying
 
 =back
 
+=head2 MANAGEMENT CLASSES
+
+Management classes allows cobbler to function as an configuration management system. Management classes provide a collection of management resources as defined in /etc/cobbler/resources/*. Cobbler currently supports the following resource types: (repositories, groups, users, mounts, packages, directories, files, services).
+
+Resources are executed in the order listed above. Service resources have an weight option to ensure services can be stopped, started, and restarted granular. 
+
+B<cobbler mgmtclass add --name=string --comment=string [--repositories=list] [--groups=list] [--users=list] [--mounts=list] [--packages=list] [--directories=list] [--files=list] [--services=list]>
+
+=over
+
+=item name
+
+The name of the mgmtclass. Use this name when adding a management class to a system, profile, or distro. To add a mgmtclass to an existing system use something like (cobbler system edit --name="madhatter" --mgmt-classes="http mysql").
+
+=item comment
+
+A comment that describes the functions of the management class.
+
+=item repositories
+
+Specifies a list of repository resources required by the management class.
+
+=item groups
+
+Specifies a list of group resources required by the management class.
+
+=item users
+
+Specifies a list of user resources required by the management class.
+
+=item mounts
+
+Specifies a list of mount resources required by the management class.
+
+=item packages
+
+Specifies a list of package resources required by the management class.
+
+=item directories
+
+Specifies a list of directory resources required by the management class.
+
+=item files
+
+Specifies a list of file resources required by the management class.
+
+=item services
+
+Specifies a list of service resources required by the management class.
+
+=back
+
 =head2 DISPLAYING CONFIGURATION ENTRIES
 
 The following commands are usable regardless of how you are using cobbler.
@@ -535,6 +587,457 @@ If using cobbler to manage a DHCP and/or DNS server (see the advanced section of
 run after systems are added to regenerate and reload the DHCP/DNS configurations.
 
 The sync process can also be kicked off from the web interface.
+
+=head1 MANAGEMENT RESOURCES
+
+Resources are the lego blocks of configuration management. Resources are grouped together via Management Classes, which are then linked to a system. Cobbler supports eight (8) resource types. Resources are configured in the order listed below.
+
+=over
+
+=item 1. Repositories
+
+=item 2. Groups
+
+=item 3. Users
+
+=item 4. Directories
+
+=item 5. Mounts
+
+=item 6. Packages
+
+=item 7. Files
+
+=item 8. Services
+
+=back
+
+=head2 META ATTRIBUTES
+
+All resources support the following meta attributes.
+
+=head3 Attributes
+
+=over
+
+=item services
+
+A list of services to reload when a change to this resource is made. Services are restarted using the service weighted system. Services with a higher weight are restarted first.
+
+=back
+
+=head3 Examples
+ 
+ [httpd.conf]
+ path = /etc/httpd/conf/httpd.conf
+ template = /var/lib/cobbler/templates/httpd.conf.tmpl
+ owner = root
+ group = root
+ mode = 644
+ services = httpd
+
+ [qpidd.conf]
+ path = /etc/qpidd.conf
+ template = /var/lib/cobbler/templates/qpidd.conf.tmpl
+ owner = qpidd
+ group = qpidd
+ mode = 644
+ services = openais,qpidd
+
+
+=head2 REPOSITORY RESOURCES
+
+Repository resources define native package repos used to install packages. Repositories are created using the cheetah template assigned via the template attribute. File attributes such as mode, owner, and group are automatically set based on the target OS. Repositories are managed in /etc/cobbler/resources/repositories
+
+=head3 Actions
+
+=over
+
+=item create
+
+Create the repository. [Default]
+
+=item remove
+
+Remove the repository.
+
+=back
+
+=head3 Attributes
+
+=item template
+
+Which cheetah template to use for this repository [Required]
+
+=item gpgkey
+
+Path to the gpg-key for this repository.
+
+=head3 Examples
+
+ [updates]
+ template = /var/lib/cobbler/templates/updates.repo.tmpl
+ gpgkey = /var/lib/cobbler/gpgkeys/updates.key
+ action = create
+
+=head2 GROUP RESOURCES
+
+Group resources define Unix system groups. Group resources are managed in /etc/cobbler/resources/groups
+
+=head3 Actions
+
+=over
+
+=item create
+
+Create the group. [Default]
+
+=item remove
+
+Remove the group.
+
+=back
+
+=head3 Attributes
+
+=over
+
+=item name
+
+The name of the group. [Required]
+
+=item gid 
+
+The numerical group id.
+
+=item members
+
+Members of the group.
+
+=back
+
+=head3 Examples
+
+ [nagios]
+ name = nagios
+ gid = 600
+ members = nagios,root,monitoradmin
+ action = create
+
+
+=head2 USER RESOURCES
+
+User resources define Unix system accounts. User resources are managed in /etc/cobbler/resources/users
+
+=head3 Actions
+
+=over
+
+=item create
+
+Create the user. [Default]
+
+=item remove
+
+Remove the user.
+
+=back
+
+=head3 Attributes
+
+=item username
+
+Name of the user. [Required]
+
+=item comment
+
+Gecos/Comment field.
+
+=item uid
+
+Numeric user id.
+
+=item gid
+
+Primary group id.
+
+=item home
+
+Home directory location
+
+=item shell
+
+Login shell.
+
+=item password
+
+Shadow hash of password.
+
+=head3 Examples
+
+ [qpidadmin]
+ username = qpidadmin
+ comment = Qpid Administrator
+ uid = 6001
+ gid = 6001
+ home = /var/lib/qpidd
+ shell = /bin/bash
+ action = create
+
+
+=head2 DIRECTORY RESOURCES
+
+Directory resources are managed in /etc/cobbler/resources/directories
+
+=head3 Actions
+
+=over
+
+=item create
+
+Create the directory. [Default]
+
+=item remove
+
+Remove the directory.
+
+=back
+
+=head3 Attributes
+
+=item group
+
+The group owner of the directory (string or id) [Required]
+
+=item mode
+
+Permission mode (as in chmod) [Required]
+
+=item owner
+
+The owner for the directory [Required]
+
+=item path
+
+The path that should be created or removed. [Required]
+
+=head3 Examples
+
+ [data]
+ group = root
+ mode = 0644
+ owner = root
+ path = /var/data
+ action = create 
+
+=head2 MOUNT RESOURCES
+
+Mount resources describe mounted filesystems configured via fstab. Mount resources are managed in /etc/cobbler/resources/mounts
+
+=head3 Actions
+
+=over
+
+=item create
+
+Mount the mount-point, and add it to /etc/fstab. [Default]
+
+=item remove
+
+Unmount the mount-point, and remove it from /etc/fstab. 
+
+=back
+
+=head3 Attributes
+
+All attributes are required.
+
+=item fs_spec
+
+Describes the block special device or remote filesystem to be mounted.
+
+=item fs_file
+
+Describes the mount point for the filesystem.
+
+=item fs_vfstype
+
+Describes the type of the filesystem.
+
+=item fs_mntops
+
+Describes the mount options associated with the filesystem. It is formatted as a comma separated list of options. It contains at least the type of mount plus any additional options appropriate to the filesystem type. For documentation on the available options for non-nfs file systems, see mount(8). For documentation on all nfs-specific options have a look at nfs(5).
+
+=item fs_freq
+
+Used for by the dump(8) command to determine which filesystems need to be dumped. If not present dump will assume that the filesystem does not need to be dumped.
+
+=item fs_passno
+
+Used by the fsck(8) program to determine the order in which filesystem checks are done at reboot time.Default value = 2
+
+=head3 Examples
+
+ [data]
+ fs_spec = 10.0.1.15:/data
+ fs_file = /data
+ fs_vfstype = nfs
+ fs_mntops = ro,timeo=30
+ fs_freq = 0
+ fs_passno = 0
+ action = create
+
+=head2 PACKAGE RESOURCES
+
+Package resources are managed in /etc/cobbler/resources/packages
+
+=head3 Actions
+
+=over
+
+=item install
+
+Install the package. [Default]
+
+=item uninstall
+
+Uninstall the package.
+
+=back
+
+=head3 Attributes
+
+=over
+
+=item installer
+
+Which package manager to use, vaild options [rpm|yum].
+
+=item version
+
+Which version of the package to install.
+
+=item url
+
+The package url to install from.
+
+=back
+
+=head3 Examples
+
+ [postfix]
+ installer = yum
+ version = 2.3.3-2.1.el5_2
+
+ [cobbler]
+ installer = rpm
+ version = 1.6.6-1.el5
+ url = http://packages.example.com
+
+
+=head2 FILE RESOURCES
+
+File resources are managed in /etc/cobbler/resources/files
+
+=head3 Actions
+
+=over
+
+=item create
+
+Create the file. [Default]
+
+=item remove
+
+Remove the file.
+
+=back
+
+=head3 Attributes
+
+=over
+
+=item mode
+
+Permission mode (as in chmod).
+
+=item group
+
+The group owner of the file.
+
+=item owner
+
+The owner for the file.
+
+=item path
+
+The path for the file.
+
+=item template
+
+The template for the file.
+
+=back
+
+=head3 Examples
+
+ [qpidd.conf]
+ mode = 0644
+ group = root
+ owner = root
+ path = /etc/httpd/conf
+ template = /var/lib/cobbler/templates/httpd.conf.tmpl
+ services = qpidd
+ action = create
+
+ [httpd.conf]
+ path = /etc/httpd/conf
+ action = remove
+
+
+=head2 SERVICE RESOURCES
+
+Service resources have an weight option to ensure services can be stopped, started, and restarted as defined by the end user. This allows features such as resource dependencies and service restarts/reloads based on resource changes to work. Service resources are managed in /etc/cobbler/resources/services.
+
+=head3 Actions
+
+=over
+
+=item enable
+
+Enable the service. [Default]
+
+=item disable
+
+Disable the service.
+
+=back
+
+=head3 Attributes
+
+=over
+
+=item name
+
+Name of the service to manage via /sbin/service command
+
+=item weight
+
+A number between 1 - 100, determines the order of service stop, start, restart, and reload.
+
+=item reload_support
+
+Weather the resource supports the reload argument used by the native service manager. This option is useful for resources that do not require a restart to reload configuration files.
+
+=back
+
+=head3 Examples
+
+ [httpd]
+ name = httpd
+ weight = 1
+ reload_support = True
+ action = enable
 
 =head1 EXAMPLES
 

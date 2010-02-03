@@ -1,0 +1,6 @@
+#for item in $yum:
+yum install -y $item
+#end for
+#for item in $rpm:
+rpm -i $item
+#end for

@@ -109,17 +109,18 @@ if __name__ == "__main__":
     vw_localmirror = wwwpath + "/localmirror"
     vw_kickstarts  = wwwpath + "/kickstarts"
     vw_kickstarts_sys  = wwwpath + "/kickstarts_sys"
-    vw_repomirror = wwwpath + "/repo_mirror"
-    vw_ksmirror   = wwwpath + "/ks_mirror"
-    vw_ksmirrorc  = wwwpath + "/ks_mirror/config"
-    vw_images     = wwwpath + "/images"
-    vw_distros    = wwwpath + "/distros"
-    vw_systems    = wwwpath + "/systems"
-    vw_profiles   = wwwpath + "/profiles"
-    vw_links      = wwwpath + "/links"
-    vw_aux        = wwwpath + "/aux"
-    modpython     = wwwpath + "/web"
-    modwsgisvc    = wwwpath + "/svc"
+    vw_repomirror  = wwwpath + "/repo_mirror"
+    vw_ksmirror    = wwwpath + "/ks_mirror"
+    vw_ksmirrorc   = wwwpath + "/ks_mirror/config"
+    vw_images      = wwwpath + "/images"
+    vw_distros     = wwwpath + "/distros"
+    vw_systems     = wwwpath + "/systems"
+    vw_profiles    = wwwpath + "/profiles"
+    vw_links       = wwwpath + "/links"
+    vw_aux         = wwwpath + "/aux"
+    vw_mgmtclasses = wwwpath + "/mgmtclasses"
+    modpython      = wwwpath + "/web"
+    modwsgisvc     = wwwpath + "/svc"
         
     # log paths
     logpath  = "/var/log/cobbler"
@@ -149,7 +150,8 @@ if __name__ == "__main__":
         packages = [
             "cobbler",
             "cobbler/modules", 
-            "koan"
+            "koan",
+            "koan/redhat"
         ],
         scripts = [
             "scripts/cobbler", 
@@ -224,11 +226,12 @@ if __name__ == "__main__":
             (loadpath,  ['scripts/zpxe.rexx']),
                     
             # database/serializer
-            (dbpath + "/distros.d",  []),
-            (dbpath + "/profiles.d", []),
-            (dbpath + "/systems.d",  []),
-            (dbpath + "/repos.d",    []),
-            (dbpath + "/images.d",   []),
+            (dbpath + "/distros.d",    []),
+            (dbpath + "/profiles.d",   []),
+            (dbpath + "/systems.d",    []),
+            (dbpath + "/repos.d",      []),
+            (dbpath + "/images.d",     []),
+            (dbpath + "/mgmtclasss.d", []),
 
             # sample kickstart files
             (kickpath,  ['kickstarts/legacy.ks']),
@@ -334,6 +337,7 @@ if __name__ == "__main__":
             (vw_images,         []),
             (vw_systems,        []),
             (vw_profiles,       []),
+            (vw_mgmtclasses,    []),
             (vw_links,          []),
             (vw_aux,            []),
 
@@ -366,28 +370,31 @@ if __name__ == "__main__":
             (vw_aux,            ['aux/anamon', 'aux/anamon.init']),
 
             # Directories to hold cobbler triggers
-            ("%s/add/distro/pre" % trigpath,      []),
-            ("%s/add/distro/post" % trigpath,     []),
-            ("%s/add/profile/pre" % trigpath,     []),
-            ("%s/add/profile/post" % trigpath,    []),
-            ("%s/add/system/pre" % trigpath,      []),
-            ("%s/add/system/post" % trigpath,     []),
-            ("%s/add/repo/pre" % trigpath,        []),
-            ("%s/add/repo/post" % trigpath,       []),
-            ("%s/delete/distro/pre" % trigpath,   []),
-            ("%s/delete/distro/post" % trigpath,  []),
-            ("%s/delete/profile/pre" % trigpath,  []),
-            ("%s/delete/profile/post" % trigpath, []),
-            ("%s/delete/system/pre" % trigpath,   []),
-            ("%s/delete/system/post" % trigpath,  []),
-            ("%s/delete/repo/pre" % trigpath,     []),
-            ("%s/delete/repo/post" % trigpath,    []),
-            ("%s/delete/repo/post" % trigpath,    []),
-            ("%s/install/pre" % trigpath,         []),
-            ("%s/install/post" % trigpath,        []),
-            ("%s/sync/pre" % trigpath,            []),
-            ("%s/sync/post" % trigpath,           []),
-            ("%s/change" % trigpath,              [])
+            ("%s/add/distro/pre" % trigpath,        []),
+            ("%s/add/distro/post" % trigpath,       []),
+            ("%s/add/profile/pre" % trigpath,       []),
+            ("%s/add/profile/post" % trigpath,      []),
+            ("%s/add/system/pre" % trigpath,        []),
+            ("%s/add/system/post" % trigpath,       []),
+            ("%s/add/repo/pre" % trigpath,          []),
+            ("%s/add/repo/post" % trigpath,         []),
+            ("%s/add/mgmtclass/pre" % trigpath,     []),
+            ("%s/add/mgmtclass/post" % trigpath,    []),
+            ("%s/delete/distro/pre" % trigpath,     []),
+            ("%s/delete/distro/post" % trigpath,    []),
+            ("%s/delete/profile/pre" % trigpath,    []),
+            ("%s/delete/profile/post" % trigpath,   []),
+            ("%s/delete/system/pre" % trigpath,     []),
+            ("%s/delete/system/post" % trigpath,    []),
+            ("%s/delete/repo/pre" % trigpath,       []),
+            ("%s/delete/repo/post" % trigpath,      []),
+            ("%s/delete/mgmtclass/pre" % trigpath,  []),
+            ("%s/delete/mgmtclass/post" % trigpath, []),
+            ("%s/install/pre" % trigpath,           []),
+            ("%s/install/post" % trigpath,          []),
+            ("%s/sync/pre" % trigpath,              []),
+            ("%s/sync/post" % trigpath,             []),
+            ("%s/change" % trigpath,                [])
         ],
         description = SHORT_DESC,
         long_description = LONG_DESC

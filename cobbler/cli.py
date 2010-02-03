@@ -34,15 +34,17 @@ import item_distro
 import item_profile
 import item_system
 import item_repo
+import item_mgmtclass
 import item_image
 
 OBJECT_ACTIONS   = {
-   "distro"  : "add copy edit find list remove rename report".split(" "),
-   "profile" : "add copy dumpvars edit find getks list remove rename report".split(" "),
-   "system"  : "add copy dumpvars edit find getks list remove rename report poweron poweroff reboot".split(" "),
-   "image"   : "add copy edit find list remove rename report".split(" "),
-   "repo"    : "add copy edit find list remove rename report".split(" ")
-} 
+   "distro"    : "add copy edit find list remove rename report".split(" "),
+   "profile"   : "add copy dumpvars edit find getks list remove rename report".split(" "),
+   "system"    : "add copy dumpvars edit find getks list remove rename report poweron poweroff reboot".split(" "),
+   "image"     : "add copy edit find list remove rename report".split(" "),
+   "repo"      : "add copy edit find list remove rename report".split(" "),
+   "mgmtclass" : "add copy edit find list remove rename report".split(" ")
+}
 OBJECT_TYPES = OBJECT_ACTIONS.keys()
 DIRECT_ACTIONS = "aclsetup buildiso deploy import list report reposync sync validateks version".split()
 
@@ -69,6 +71,8 @@ def report_item(remote,otype,item=None,name=None):
       data = utils.printable_from_fields(item, item_repo.FIELDS)
    elif otype == "image":
       data = utils.printable_from_fields(item, item_image.FIELDS)
+   elif otype == "mgmtclass":
+      data = utils.printable_from_fields(item, item_mgmtclass.FIELDS)
    print data
 
 def list_items(remote,otype):
@@ -90,7 +94,7 @@ def opt(options, k):
    Returns an option from an Optparse values instance
    """
    try:
-      data = getattr(options, k) 
+      data = getattr(options, k)
    except:
       # FIXME: debug only
       traceback.print_exc()
@@ -160,7 +164,7 @@ class BootCLI:
         try:
             s.ping()
         except:
-            print >> sys.stderr, "cobblerd does not appear to be running/accessible" 
+            print >> sys.stderr, "cobblerd does not appear to be running/accessible"
             sys.exit(411)
 
         s = xmlrpclib.Server(self.url_cobbler_api)
@@ -194,7 +198,7 @@ class BootCLI:
                 if object_action is not None:
                     self.object_command(object_type, object_action)
                 else:
-                    self.print_object_help(object_type)   
+                    self.print_object_help(object_type)
 
             elif direct_action is not None:
                 self.direct_command(direct_action)
@@ -240,13 +244,15 @@ class BootCLI:
             return item_repo.FIELDS
         elif object_type == "image":
             return item_image.FIELDS
+        elif object_type == "mgmtclass":
+            return item_mgmtclass.FIELDS
 
     def object_command(self, object_type, object_action):
         """
         Process object-based commands such as "distro add" or "profile rename"
         """
         task_id = -1 # if assigned, we must tail the logfile
-        
+
         fields = self.get_fields(object_type)
         if object_action in [ "add", "edit", "copy", "rename", "find" ]:
             utils.add_options_from_fields(object_type, self.parser, fields, object_action)
@@ -294,13 +300,13 @@ class BootCLI:
             for item in items:
                 print item
         else:
-            raise exceptions.NotImplementedError() 
-            
+            raise exceptions.NotImplementedError()
+
         # FIXME: add tail/polling code here
         if task_id != -1:
             self.print_task(task_id)
             self.follow_task(task_id)
-                                                
+
         return True
 
     # BOOKMARK
@@ -399,7 +405,7 @@ class BootCLI:
                 print "\nRestart cobblerd and then run 'cobbler sync' to apply changes."
             else:
                 print "No configuration problems found.  All systems go."
-                
+
         elif action_name == "sync":
             (options, args) = self.parser.parse_args()
             self.parser.add_option("--verbose", dest="verbose", action="store_true", help="run sync with more output")
@@ -416,6 +422,8 @@ class BootCLI:
             report_items(self.remote,"repo")
             print "\nimages:\n=========="
             report_items(self.remote,"image")
+            print "\nmgmtclasses:\n=========="
+            report_items(self.remote,"mgmtclass")
         elif action_name == "list":
             # no tree view like 1.6?  This is more efficient remotely
             # for large configs and prevents xfering the whole config
@@ -431,6 +439,8 @@ class BootCLI:
             list_items(self.remote,"repo")
             print "\nimages:"
             list_items(self.remote,"image")
+            print "\nmgmtclasses:"
+            list_items(self.remote,"mgmtclass")
         else:
             print "No such command: %s" % action_name
             sys.exit(1)
@@ -438,8 +448,8 @@ class BootCLI:
 
         # FIXME: add tail/polling code here
         if task_id != -1:
-            self.print_task(task_id) 
-            self.follow_task(task_id) 
+            self.print_task(task_id)
+            self.follow_task(task_id)
 
         return True
 
@@ -451,10 +461,10 @@ class BootCLI:
         atime = time.asctime(time.localtime(etime))
         print "task started (id=%s, time=%s)" % (name, atime)
 
-    
+
     def follow_task(self, task_id):
         logfile = "/var/log/cobbler/tasks/%s.log" % task_id
-        # adapted from:  http://code.activestate.com/recipes/157035/        
+        # adapted from:  http://code.activestate.com/recipes/157035/
         file = open(logfile,'r')
         #Find the size of the file and move to the end
         #st_results = os.stat(filename)
@@ -495,7 +505,7 @@ class BootCLI:
         Prints general-top level help, e.g. "cobbler --help" or "cobbler" or "cobbler command-does-not-exist"
         """
         print "usage\n====="
-        print "cobbler <distro|profile|system|repo|image> ... "
+        print "cobbler <distro|profile|system|repo|image|mgmtclass> ... "
         print "        [add|edit|copy|getks*|list|remove|rename|report] [options|--help]"
         print "cobbler <%s> [options|--help]" % "|".join(DIRECT_ACTIONS)
         sys.exit(2)

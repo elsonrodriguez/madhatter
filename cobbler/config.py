@@ -31,12 +31,14 @@ import item_distro as distro
 import item_profile as profile
 import item_system as system
 import item_repo as repo
+import item_mgmtclass as mgmtclass
 import item_image as image
 
 import collection_distros as distros
 import collection_profiles as profiles
 import collection_systems as systems
 import collection_repos as repos
+import collection_mgmtclasses as mgmtclasses
 import collection_images as images
 
 import settings
@@ -76,6 +78,7 @@ class Config:
        self._profiles     = profiles.Profiles(weakref.proxy(self))
        self._systems      = systems.Systems(weakref.proxy(self))
        self._images       = images.Images(weakref.proxy(self))
+       self._mgmtclasses  = mgmtclasses.Mgmtclasses(weakref.proxy(self))
        self._settings     = settings.Settings() # not a true collection
 
    def generate_uid(self):
@@ -127,6 +130,12 @@ class Config:
        """
        return self._images
 
+   def mgmtclasses(self):
+       """
+       Return the definitive copy of the Mgmtclasses collection
+       """
+       return self._mgmtclasses
+
    def new_distro(self,is_subobject=False):
        """
        Create a new distro object with a backreference to this object
@@ -157,6 +166,12 @@ class Config:
        """
        return image.Image(weakref.proxy(self),is_subobject=is_subobject)
 
+   def new_mgmtclass(self,is_subobject=False):
+       """
+       Create a new image object...
+       """
+       return mgmtclass.Mgmtclass(weakref.proxy(self),is_subobject=is_subobject)
+
    def clear(self):
        """
        Forget about all loaded configuration data
@@ -167,6 +182,7 @@ class Config:
        self._profiles.clear(),
        self._images.clear()
        self._systems.clear(),
+       self._mgmtclasses.clear(),
        return True
 
    def serialize(self):
@@ -178,6 +194,7 @@ class Config:
        serializer.serialize(self._profiles)
        serializer.serialize(self._images)
        serializer.serialize(self._systems)
+       serializer.serialize(self._mgmtclasses)
        return True
 
    def serialize_item(self,collection,item):
@@ -208,6 +225,7 @@ class Config:
        serializer.deserialize(self._profiles)
        serializer.deserialize(self._images)
        serializer.deserialize(self._systems)
+       serializer.deserialize(self._mgmtclasses)
        return True
 
    def deserialize_raw(self,collection_type):
@@ -233,6 +251,8 @@ class Config:
             result=self._repos
         elif collection_type == "image":
             result=self._images
+        elif collection_type == "mgmtclass":
+            result=self._mgmtclasses
         else:
             raise CX("internal error, collection name %s not supported" % collection_type)
         return result

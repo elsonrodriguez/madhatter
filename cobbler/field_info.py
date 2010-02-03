@@ -43,6 +43,7 @@ USES_SELECT = [
    "profile",
    "distro",
    "image",
+   "mgmtclass",
    "virt_type",
    "arch",
    "*bonding",
@@ -136,9 +137,16 @@ BLOCK_MAPPINGS = {
    "environment"              : "Advanced",
    "mirror_locally"           : "Advanced",
    "priority"                 : "Advanced",
-   "yumopts"                  : "Advanced"
+   "yumopts"                  : "Advanced",
+   "repositories"             : "Management",
+   "groups"                   : "Management",
+   "users"                    : "Management",
+   "mounts"                   : "Management",
+   "packages"                 : "Management",
+   "directories"              : "Management",
+   "files"                    : "Management"
 }
-   
+
 # Certain legacy fields need to have different CLI options than the direct translation of their
 # name in the FIELDS data structure.  We should not add any more of these under any conditions.
  

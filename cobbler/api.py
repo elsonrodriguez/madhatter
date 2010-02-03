@@ -62,6 +62,7 @@ import item_distro
 import item_profile
 import item_system
 import item_repo
+import item_mgmtclass
 import item_image
 
 ERROR = 100
@@ -280,6 +281,12 @@ class BootAPI:
         """
         return self.get_items("image")
 
+    def mgmtclasses(self):
+        """
+        Return the current list of mgmtclasses
+        """
+        return self.get_items("mgmtclass")
+
     def settings(self):
         """
         Return the application configuration
@@ -316,6 +323,9 @@ class BootAPI:
     def copy_image(self, ref, newname):
         return self.copy_item("image", ref, newname, logger=None)
 
+    def copy_mgmtclass(self, ref, newname):
+        return self.copy_item("mgmtclass", ref, newname, logger=None)
+
     # ==========================================================================
 
     def remove_item(self, what, ref, recursive=False, delete=True, with_triggers=True, logger=None):
@@ -341,6 +351,9 @@ class BootAPI:
     def remove_image(self, ref, recursive=False, delete=True, with_triggers=True, logger=None):
         return self.remove_item("image", ref, recursive=recursive, delete=delete, with_triggers=with_triggers, logger=logger)
 
+    def remove_mgmtclass(self, ref, recursive=False, delete=True, with_triggers=True, logger=None):
+        return self.remove_item("mgmtclass", ref, recursive=recursive, delete=delete, with_triggers=with_triggers, logger=logger)
+
     # ==========================================================================
 
     def rename_item(self, what, ref, newname, logger=None):
@@ -361,6 +374,9 @@ class BootAPI:
     
     def rename_image(self, ref, newname, logger=None):
         return self.rename_item("image", ref, newname, logger=logger)
+
+    def rename_mgmtclass(self, ref, newname, logger=None):
+        return self.rename_item("mgmtclass", ref, newname, logger=logger)
 
     # ==========================================================================
    
@@ -386,6 +402,10 @@ class BootAPI:
         self.log("new_image",[is_subobject])
         return self._config.new_image(is_subobject=is_subobject)
 
+    def new_mgmtclass(self,is_subobject=False):
+        self.log("new_mgmtclass",[is_subobject])
+        return self._config.new_mgmtclass(is_subobject=is_subobject)
+
     # ==========================================================================
 
     def add_item(self, what, ref, check_for_duplicate_names=False, save=True,logger=None):
@@ -406,6 +426,9 @@ class BootAPI:
 
     def add_image(self, ref, check_for_duplicate_names=False,save=True, logger=None):
         return self.add_item("image", ref, check_for_duplicate_names=check_for_duplicate_names, save=save,logger=logger)
+
+    def add_mgmtclass(self, ref, check_for_duplicate_names=False,save=True, logger=None):
+        return self.add_item("mgmtclass", ref, check_for_duplicate_names=check_for_duplicate_names, save=save,logger=logger)
 
     # ==========================================================================
 
@@ -441,6 +464,9 @@ class BootAPI:
     def find_image(self, name=None, return_list=False, no_errors=False, **kargs):
         return self._config.images().find(name=name, return_list=return_list, no_errors=no_errors, **kargs)
 
+    def find_mgmtclass(self, name=None, return_list=False, no_errors=False, **kargs):
+        return self._config.mgmtclasses().find(name=name, return_list=return_list, no_errors=no_errors, **kargs)
+
     # ==========================================================================
 
     def __since(self,mtime,collector,collapse=False):
@@ -475,6 +501,9 @@ class BootAPI:
 
     def get_images_since(self,mtime,collapse=False):
         return self.__since(mtime,self.images,collapse=collapse)
+
+    def get_mgmtclasses_since(self,mtime,collapse=False):
+        return self.__since(mtime,self.mgmtclasses,collapse=collapse)
 
     # ==========================================================================
 

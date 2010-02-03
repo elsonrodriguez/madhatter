@@ -2,7 +2,7 @@
 koan = kickstart over a network
 
 a tool for network provisioning of virtualization (xen,kvm/qemu,vmware)
-and network re-provisioning of existing Linux systems.  
+and network re-provisioning of existing Linux systems.
 used with 'cobbler'. see manpage for usage.
 
 Copyright 2006-2008 Red Hat, Inc.
@@ -12,12 +12,12 @@ This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
- 
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
- 
+
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
@@ -61,6 +61,7 @@ import glob
 import socket
 import utils
 import time
+import configmgmt
 
 COBBLER_REQUIRED = 1.300
 
@@ -113,6 +114,10 @@ def main():
                  dest="is_update_files",
                  action="store_true",
                  help="update templated files from cobbler config management")
+    p.add_option("-c", "--update-config",
+                 dest="is_update_config",
+                 action="store_true",
+                 help="update system configuration from cobbler config management")
     p.add_option("-V", "--virt-name",
                  dest="virt_name",
                  help="use this name for the virtual guest")
@@ -149,7 +154,7 @@ def main():
                  help="for xen/qemu/KVM, poll & restart the VM after the install is done")
     p.add_option("-P", "--virt-path",
                  dest="virt_path",
-                 help="override virt install location")  
+                 help="override virt install location")
     p.add_option("-T", "--virt-type",
                  dest="virt_type",
                  help="override virt install type")
@@ -157,11 +162,11 @@ def main():
                  dest="virt_bridge",
                  help="override virt bridge")
     p.add_option("-n", "--nogfx",
-                 action="store_true", 
+                 action="store_true",
                  dest="no_gfx",
                  help="disable Xen graphics (xenpv,xenfv)")
     p.add_option("", "--virt-auto-boot",
-                 action="store_true", 
+                 action="store_true",
                  dest="virt_auto_boot",
                  help="set VM for autoboot")
     p.add_option("", "--add-reinstall-entry",
@@ -193,6 +198,7 @@ def main():
         k.server              = options.server
         k.is_virt             = options.is_virt
         k.is_update_files     = options.is_update_files
+        k.is_update_config    = options.is_update_config
         k.is_replace          = options.is_replace
         k.is_display          = options.is_display
         k.profile             = options.profile
@@ -258,6 +264,7 @@ class Koan:
         self.list_systems      = None
         self.is_virt           = None
         self.is_update_files   = None
+        self.is_update_config  = None
         self.is_replace        = None
         self.port              = None
         self.static_interface  = None
@@ -273,7 +280,7 @@ class Koan:
         """
         koan's main function...
         """
-        
+
         # we can get the info we need from either the cobbler server
         #  or a kickstart file
         if self.server is None:
@@ -281,12 +288,12 @@ class Koan:
 
         # check to see that exclusive arguments weren't used together
         found = 0
-        for x in (self.is_virt, self.is_replace, self.is_update_files, self.is_display, self.list_items):
+        for x in (self.is_virt, self.is_replace, self.is_update_files, self.is_update_config, self.is_display, self.list_items):
             if x:
                found = found+1
         if found != 1:
-            raise InfoException, "choose: --virt, --replace-self, --update-files, --list=what, or --display"
- 
+            raise InfoException, "choose: --virt, --replace-self, --update-files, --update-config, --list=what, or --display"
+
 
         # This set of options are only valid with --server
         if not self.server or self.server == "":
@@ -298,14 +305,14 @@ class Koan:
         if self.list_items:
             self.list(self.list_items)
             return
-    
+
         if not os.getuid() == 0:
             if self.is_virt:
                 print "warning: running as non root"
             else:
                 print "this operation requires root access"
                 return 3
-        
+
         # if both --profile and --system were ommitted, autodiscover
         if self.is_virt:
             if (self.profile is None and self.system is None and self.image is None):
@@ -338,7 +345,7 @@ class Koan:
         if self.static_interface is not None and self.profile is not None:
             raise InfoException, "--static-interface option is incompatible with --profile option use --system instead"
 
-        # perform one of three key operations
+        # perform one of four key operations
         if self.is_virt:
             self.virt()
         elif self.is_replace:
@@ -348,10 +355,12 @@ class Koan:
                 self.replace()
         elif self.is_update_files:
             self.update_files()
+        elif self.is_update_config:
+            self.update_config()
         else:
             self.display()
 
-    # --------------------------------------------------   
+    # --------------------------------------------------
 
     def ask_profile(self):
         """
@@ -366,14 +375,14 @@ class Koan:
             self.connect_fail()
 
         print "\n- which profile to install?\n"
-      
+
         for x in available_profiles:
             print "%s" % x["name"]
 
         sys.stdout.write("\n?>")
 
         data = sys.stdin.readline().strip()
- 
+
         for x in available_profiles:
             print "comp (%s,%s)" % (x["name"],data)
             if x["name"] == data:
@@ -385,7 +394,7 @@ class Koan:
     def autodetect_system(self, allow_interactive=False):
         """
         Determine the name of the cobbler system record that
-        matches this MAC address. 
+        matches this MAC address.
         """
         try:
             import rhpl
@@ -432,7 +441,7 @@ class Koan:
     #---------------------------------------------------
 
     def safe_load(self,hashv,primary_key,alternate_key=None,default=None):
-        if hashv.has_key(primary_key): 
+        if hashv.has_key(primary_key):
             return hashv[primary_key]
         elif alternate_key is not None and hashv.has_key(alternate_key):
             return hashv[alternate_key]
@@ -465,7 +474,7 @@ class Koan:
                    profile_data["kickstart"] = "http://%s/cblr/svc/op/ks/profile/%s" % (profile_data['http_server'], profile_data['name'])
                else:
                    profile_data["kickstart"] = "http://%s/cblr/svc/op/ks/system/%s" % (profile_data['http_server'], profile_data['name'])
-                
+
             # find_kickstart source tree in the kickstart file
             self.get_install_tree_from_kickstart(profile_data)
 
@@ -479,7 +488,7 @@ class Koan:
                     profile_data["initrd"] = profile_data["install_tree"] + "/images/pxeboot/initrd.img"
 
 
-        # find the correct file download location 
+        # find the correct file download location
         if not self.is_virt:
             if os.path.exists("/boot/efi/EFI/redhat/elilo.conf"):
                 # elilo itanium support, may actually still work
@@ -505,7 +514,7 @@ class Koan:
                 elif profile_data.has_key("file"):
                     print "- ISO or Image based installation, always uses --virt-type=qemu"
                     self.virt_type = "qemu"
-                    
+
                 else:
                     # FIXME: auto never selects vmware, maybe it should if we find it?
 
@@ -569,18 +578,18 @@ class Koan:
 
             if self.virt_type in [ "xenpv" ]:
                 # we need to fetch the kernel/initrd to do this
-                download = "/var/lib/xen" 
+                download = "/var/lib/xen"
             elif self.virt_type in [ "xenfv", "vmware", "vmwarew" ] :
                 # we are downloading sufficient metadata to initiate PXE, no D/L needed
-                download = None 
+                download = None
             else: # qemu
                 # fullvirt, can use set_location in virtinst library, no D/L needed yet
-                download = None 
+                download = None
 
         # download required files
         if not self.is_display and download is not None:
            self.get_distro_files(profile_data, download)
-  
+
         # perform specified action
         after_download(self, profile_data)
 
@@ -623,7 +632,7 @@ class Koan:
                 print "install_tree:", profile_data["install_tree"]
             else:
                 print "warning: kickstart found but no install_tree found"
-                        
+
         except:
             # unstable to download the kickstart, however this might not
             # be an error.  For instance, xen FV installations of non
@@ -654,7 +663,7 @@ class Koan:
         return self.net_install(after_download)
 
     #---------------------------------------------------
-                 
+
     def virt(self):
         """
         Handle virt provisioning.
@@ -673,7 +682,7 @@ class Koan:
         files in cobbler that we are providing to nodes.  Basically
         this turns cobbler into a lighweight configuration management
         system for folks who are not needing a more complex CMS.
-        
+
         Read more at:
         https://fedorahosted.org/cobbler/wiki/BuiltinConfigManagement
         """
@@ -697,7 +706,7 @@ class Koan:
         print "- template map: %s" % template_files
 
         print "- processing for files to download..."
-        for src in template_keys: 
+        for src in template_keys:
             dest = template_files[src]
             save_as = dest
             dest = dest.replace("_","__")
@@ -716,11 +725,118 @@ class Koan:
                 os.makedirs(os.path.dirname(save_as))
             cmd = [ "/usr/bin/wget", url, "--output-document", save_as ]
             utils.subprocess_call(cmd)
-       
-        return True 
+
+        return True
 
     #---------------------------------------------------
-  
+
+    def update_config(self):
+        """
+        Contact the cobbler server and update the system configuration using
+        cobbler's built-in configuration management. Configs are based on
+        a combination of mgmt-classes assigned to the system, profile, and
+        distro.
+        """
+        # FIXME get hostname from utils?
+        hostname     = socket.gethostname()
+        server       = self.xmlrpc_server
+        try:
+            config_data = server.get_config_data(hostname)
+        except:
+            traceback.print_exc()
+            self.connect_fail()
+
+        # Save configuration data to disk
+        node_config_data = "/tmp/%s.json" % (hostname)
+        f = open(node_config_data, 'w')
+        f.write(config_data)
+        f.close
+
+        # Start Configuration Run
+        print "- Starting configuration run for %s" % hostname
+        runtime_start = time.time()
+        config_run  = configmgmt.Configure(config_data)
+        repo_stats  = config_run.configure_repositories()
+        group_stats = config_run.configure_groups()
+        user_stats  = config_run.configure_users()
+        mount_stats = config_run.configure_mounts()
+        pkg_stats   = config_run.configure_packages()
+        dir_stats   = config_run.configure_directories()
+        file_stats  = config_run.configure_files()
+        runtime_end = time.time()
+
+        total_runtime = (runtime_end - runtime_start)
+
+        # Gather resource stats
+        in_sync_resources = (
+            repo_stats['in_sync']  +
+            group_stats['in_sync'] +
+            user_stats['in_sync']  +
+            mount_stats['in_sync'] +
+            pkg_stats['in_sync']   +
+            dir_stats['in_sync']   +
+            file_stats['in_sync']
+        )
+        oo_sync_resources = (
+            repo_stats['oo_sync']  +
+            group_stats['oo_sync'] +
+            user_stats['oo_sync']  +
+            mount_stats['oo_sync'] +
+            pkg_stats['oo_sync']   +
+            dir_stats['oo_sync']   +
+            file_stats['oo_sync']
+        )
+        failed_resources = (
+            repo_stats['failed']  +
+            group_stats['failed'] +
+            user_stats['failed']  +
+            mount_stats['failed'] +
+            pkg_stats['failed']   +
+            dir_stats['failed']   +
+            file_stats['failed']
+        )
+
+        total_resources = (in_sync_resources + oo_sync_resources + failed_resources)
+
+        # Print Resource Report
+        print
+        print "\033[1;36m\tResource Report\033[1;m"
+        print "\t-------------------------"
+        print "\t    In Sync: %d" % in_sync_resources
+        print "\tOut of Sync: %d" % oo_sync_resources
+        print "\t       Fail: %d" % failed_resources
+        print "\t-------------------------"
+        print "\tTotal Resources: %d" % total_resources
+
+        print
+        print "\033[1;36m\tResource |In Sync|OO Sync|Failed\033[1;m"
+        print "\t-----------------------------"
+        print "\t      Repos:  %d      %d    %d" % (repo_stats['in_sync'], repo_stats['oo_sync'],repo_stats['failed'])
+        print "\t     Groups:  %d      %d    %d" % (group_stats['in_sync'],group_stats['oo_sync'],group_stats['failed'])
+        print "\t      Users:  %d      %d    %d" % (user_stats['in_sync'],user_stats['oo_sync'],user_stats['failed'])
+        print "\t     Mounts:  %d      %d    %d" % (mount_stats['in_sync'],mount_stats['oo_sync'],mount_stats['failed'])
+        print "\t   Packages:  %d      %d    %d" % (pkg_stats['in_sync'],pkg_stats['oo_sync'],pkg_stats['failed'])
+        print "\tDirectories:  %d      %d    %d" % (dir_stats['in_sync'],dir_stats['oo_sync'],dir_stats['failed'])
+        print "\t      Files:  %d      %d    %d" % (file_stats['in_sync'],file_stats['oo_sync'],file_stats['failed'])
+
+
+        # Print Runtime Report
+        print
+        print "\033[1;36m\tRunTime Report\033[1;m"
+        print "\t-------------------------"
+        print "\t      Repos: %.02f" % repo_stats['runtime']
+        print "\t     Groups: %.02f" % group_stats['runtime']
+        print "\t      Users: %.02f" % user_stats['runtime']
+        print "\t     Mounts: %.02f" % mount_stats['runtime']
+        print "\t   Packages: %.02f" % pkg_stats['runtime']
+        print "\tDirectories: %.02f" % dir_stats['runtime']
+        print "\t      Files: %.02f" % file_stats['runtime']
+        print "\t-------------------------"
+        print "\tTotal Runtime: %.02f" % total_runtime
+        print
+
+    #---------------------------------------------------
+
     def kexec_replace(self):
         """
         Prepare to morph existing system by downloading new kernel and initrd
@@ -975,7 +1091,7 @@ class Koan:
         if data == {}:
             raise InfoException("No entry/entries found")
         return data
-    
+
     #---------------------------------------------------
 
     def get_ips(self,strdata):
@@ -1168,7 +1284,7 @@ class Koan:
                    return "failed"
                elif state == "shutdown":
                    print "- shutdown VM detected, is the install done?  Restarting!"
-                   utils.find_vm(conn, virtname).create()    
+                   utils.find_vm(conn, virtname).create()
                    return results
                else:
                    raise InfoException("internal error, bad virt state")
@@ -1209,7 +1325,7 @@ class Koan:
             import xencreate
             creator = xencreate.start_install
             if self.virt_type == "xenfv":
-               fullvirt = True 
+               fullvirt = True
             can_poll = "xen"
         elif self.virt_type == "qemu":
             fullvirt = True
@@ -1236,7 +1352,7 @@ class Koan:
         disks = []
         for p in paths:
             path = paths[counter]
-            if counter >= len(sizes): 
+            if counter >= len(sizes):
                 size = sizes[-1]
             else:
                 size = sizes[counter]
@@ -1284,7 +1400,7 @@ class Koan:
 
     def calc_virt_filesize(self,data,default_filesize=0):
 
-        # MAJOR FIXME: are there overrides?  
+        # MAJOR FIXME: are there overrides?
         size = self.safe_load(data,'virt_file_size','xen_file_size',0)
 
         tokens = str(size).split(",")
@@ -1349,7 +1465,7 @@ class Koan:
 
     def calc_virt_mac(self,data):
         if not self.is_virt:
-            return None # irrelevant 
+            return None # irrelevant
         if self.is_mac(self.system):
             return self.system.upper()
         return self.random_mac()
@@ -1358,7 +1474,7 @@ class Koan:
 
     def calc_virt_uuid(self,data):
         # TODO: eventually we may want to allow some koan CLI
-        # option (or cobbler system option) for passing in the UUID.  
+        # option (or cobbler system option) for passing in the UUID.
         # Until then, it's random.
         return None
         """
@@ -1409,7 +1525,7 @@ class Koan:
 
         # ok, so now we have a user that either through cobbler or some other
         # source *did* specify a location.   It might be a list.
-            
+
         virt_sizes = self.calc_virt_filesize(pd)
 
         path_splitted = location.split(",")
@@ -1426,12 +1542,12 @@ class Koan:
 
     def calc_virt_path2(self,pd,name,offset=0,location=None,sizes=[]):
 
-        # Parse the command line to determine if this is a 
+        # Parse the command line to determine if this is a
         # path, a partition, or a volume group parameter
         #   Ex:   /foo
         #   Ex:   partition:/dev/foo
         #   Ex:   volume-group:/dev/foo/
-            
+
         # chosing the disk image name (if applicable) is somewhat
         # complicated ...
 
@@ -1444,7 +1560,7 @@ class Koan:
             elif not os.path.exists(location) and os.path.isdir(os.path.dirname(location)):
                 return location
             else:
-                raise InfoException, "invalid location: %s" % location                
+                raise InfoException, "invalid location: %s" % location
         elif location.startswith("/dev/"):
             # partition
             if os.path.exists(location):
@@ -1460,7 +1576,7 @@ class Koan:
 
             if vgnames.find(location) == -1:
                 raise InfoException, "The volume group [%s] does not exist." % location
-            
+
             # check free space
             args = "LANG=C vgs --noheadings -o vg_free --units g %s" % location
             print args
@@ -1474,20 +1590,20 @@ class Koan:
             virt_size = self.calc_virt_filesize(pd)
 
             if len(virt_size) > offset:
-                virt_size = sizes[offset] 
+                virt_size = sizes[offset]
             else:
                 return sizes[-1]
 
             if freespace >= int(virt_size):
-            
+
                 # look for LVM partition named foo, create if doesn't exist
                 args = "lvs -o lv_name %s" % location
                 print "%s" % args
                 lvs_str=sub_process.Popen(args, stdout=sub_process.PIPE, shell=True).communicate()[0]
                 print lvs_str
-         
+
                 name = "%s-disk%s" % (name,offset)
- 
+
                 # have to create it?
                 if lvs_str.find(name) == -1:
                     args = "lvcreate -L %sG -n %s %s" % (virt_size, name, location)
@@ -1516,7 +1632,7 @@ class Koan:
                     args = "/usr/sbin/semanage fcontext -a -t %s %s" % (context_type, partition_location)
                     print "%s" % args
                     change_context |= sub_process.call(args, close_fds=True, shell=True)
-                    
+
                     if change_context != 0:
                         raise InfoException, "SELinux security context setting to LVM partition failed"
 

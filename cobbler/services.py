@@ -156,6 +156,8 @@ class CobblerSvc(object):
            listing = self.remote.get_images()
         elif what == "repos":
            listing = self.remote.get_repos()
+        elif what == "mgmtclasses":
+           listing = self.remote.get_mgmtclasses()
         else:
            return "?"
         for x in listing:
@@ -453,4 +455,5 @@ def test_services_access():
     os.unlink("/tmp/cobbler_t2") 
 
     remote._test_remove_objects()
+
 

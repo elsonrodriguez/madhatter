@@ -47,6 +47,7 @@ class BootLiteSync:
         self.images      = config.images()
         self.settings    = config.settings()
         self.repos       = config.repos()
+        self.mgmtclasses = config.mgmtclasses()
         if logger is None:
             logger = clogger.Logger()
         self.logger      = logger
@@ -67,7 +68,6 @@ class BootLiteSync:
         for k in kids:
             self.add_single_profile(k.name, rebuild_menu=False)    
         self.sync.pxegen.make_pxe_menu()
-
 
     def add_single_image(self, name):
         image = self.images.find(name=name)
