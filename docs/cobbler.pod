@@ -452,11 +452,11 @@ Ordinarily cobbler's repo system will understand what you mean without supplying
 
 =head2 MANAGEMENT CLASSES
 
-Management classes allows cobbler to function as an configuration management system. Management classes provide a collection of management resources as defined in /etc/cobbler/resources/*. Cobbler currently supports the following resource types: (repositories, groups, users, mounts, packages, directories, files, services).
+Management classes allows cobbler to function as an configuration management system. Management classes provide a collection of management resources as defined in /etc/cobbler/resources/*. Cobbler currently supports the following resource types: (repositories, groups, users, mounts, packages, directories, files).
 
-Resources are executed in the order listed above. Service resources have an weight option to ensure services can be stopped, started, and restarted granular. 
+Resources are executed in the order listed above.
 
-B<cobbler mgmtclass add --name=string --comment=string [--repositories=list] [--groups=list] [--users=list] [--mounts=list] [--packages=list] [--directories=list] [--files=list] [--services=list]>
+B<cobbler mgmtclass add --name=string --comment=string [--repositories=list] [--groups=list] [--users=list] [--mounts=list] [--packages=list] [--directories=list] [--files=list]>
 
 =over
 
@@ -495,10 +495,6 @@ Specifies a list of directory resources required by the management class.
 =item files
 
 Specifies a list of file resources required by the management class.
-
-=item services
-
-Specifies a list of service resources required by the management class.
 
 =back
 
@@ -608,42 +604,7 @@ Resources are the lego blocks of configuration management. Resources are grouped
 
 =item 7. Files
 
-=item 8. Services
-
 =back
-
-=head2 META ATTRIBUTES
-
-All resources support the following meta attributes.
-
-=head3 Attributes
-
-=over
-
-=item services
-
-A list of services to reload when a change to this resource is made. Services are restarted using the service weighted system. Services with a higher weight are restarted first.
-
-=back
-
-=head3 Examples
- 
- [httpd.conf]
- path = /etc/httpd/conf/httpd.conf
- template = /var/lib/cobbler/templates/httpd.conf.tmpl
- owner = root
- group = root
- mode = 644
- services = httpd
-
- [qpidd.conf]
- path = /etc/qpidd.conf
- template = /var/lib/cobbler/templates/qpidd.conf.tmpl
- owner = qpidd
- group = qpidd
- mode = 644
- services = openais,qpidd
-
 
 =head2 REPOSITORY RESOURCES
 
@@ -987,57 +948,11 @@ The template for the file.
  owner = root
  path = /etc/httpd/conf
  template = /var/lib/cobbler/templates/httpd.conf.tmpl
- services = qpidd
  action = create
 
  [httpd.conf]
  path = /etc/httpd/conf
  action = remove
-
-
-=head2 SERVICE RESOURCES
-
-Service resources have an weight option to ensure services can be stopped, started, and restarted as defined by the end user. This allows features such as resource dependencies and service restarts/reloads based on resource changes to work. Service resources are managed in /etc/cobbler/resources/services.
-
-=head3 Actions
-
-=over
-
-=item enable
-
-Enable the service. [Default]
-
-=item disable
-
-Disable the service.
-
-=back
-
-=head3 Attributes
-
-=over
-
-=item name
-
-Name of the service to manage via /sbin/service command
-
-=item weight
-
-A number between 1 - 100, determines the order of service stop, start, restart, and reload.
-
-=item reload_support
-
-Weather the resource supports the reload argument used by the native service manager. This option is useful for resources that do not require a restart to reload configuration files.
-
-=back
-
-=head3 Examples
-
- [httpd]
- name = httpd
- weight = 1
- reload_support = True
- action = enable
 
 =head1 EXAMPLES
 
